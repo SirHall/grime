@@ -31,7 +31,7 @@ impl Dice
     pub fn roll(&self) -> u8 { self.faces[rand::thread_rng().gen_range(0..6)] }
 }
 
-fn contest(a : &Dice, b : &Dice, a_rolls : usize, b_rolls : usize, samples : u32)
+fn contest(a : &Dice, b : &Dice, a_rolls : usize, b_rolls : usize, samples : u32) -> String
 {
     let mut a_wins = 0u32;
     let mut ties = 0u32;
@@ -75,15 +75,15 @@ fn contest(a : &Dice, b : &Dice, a_rolls : usize, b_rolls : usize, samples : u32
 
     match outcome
     {
-        Outcome::AWins => println!(
+        Outcome::AWins => format!(
             "{: >7} {: >2} won with {: >2}% wins and {: >2}% ties, losing {: >2}% of the time to {: >7} {: >2}",
             a.name, a_rolls, a_win_percent, ties_percent, b_win_percent, b.name, b_rolls
         ),
-        Outcome::BWins => println!(
+        Outcome::BWins => format!(
             "{: >7} {: >2} won with {: >2}% wins and {: >2}% ties, losing {: >2}% of the time to {: >7} {: >2}",
             b.name, b_rolls, b_win_percent, ties_percent, a_win_percent, a.name, a_rolls
         ),
-        Outcome::Tie => println!("Both dice tied"),
+        Outcome::Tie => format!("Both {: >7} and {: >7} tied", a.name, b.name),
     }
 }
 
@@ -98,12 +98,18 @@ fn main()
     vec![red_d, blue_d, olive_d, yellow_d, magenta_d]
         .iter()
         .combinations(2)
+        .collect::<Vec<_>>()
+        .par_iter()
         .map(|v| {
             (1..=10)
                 .collect::<Vec<_>>()
                 .par_iter()
                 .map(|i| contest(&v[0], &v[1], *i, *i, 10000000))
-                .count()
+                .collect::<Vec<_>>()
         })
+        .flatten()
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|msg| println!("{}", msg))
         .count();
 }
