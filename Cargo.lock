@@ -76,7 +76,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "grime2"
+name = "grime"
 version = "0.1.0"
 dependencies = [
  "itertools",
