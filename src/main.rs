@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 
+use core::panic;
 use std::collections::HashMap;
 
 use itertools::Itertools;
@@ -14,24 +15,56 @@ enum Outcome
     Tie,
 }
 
-#[derive(Default, Clone)]
-struct Dice
+#[derive(Clone, Copy)]
+pub enum Dice
 {
-    faces : Vec<u8>,
-    name :  String,
+    Red,
+    Blue,
+    Olive,
+    Yellow,
+    Magenta,
 }
 
 impl Dice
 {
-    pub fn new(name : &str, faces : Vec<u8>) -> Self
+    pub fn roll(&self) -> u8 { self.faces()[rand::thread_rng().gen_range(0..6)] }
+
+    pub fn faces(&self) -> [u8; 6]
     {
-        Self {
-            faces,
-            name : String::from(name),
+        match self
+        {
+            Dice::Red => [4, 4, 4, 4, 4, 9],
+            Dice::Blue => [2, 2, 2, 7, 7, 7],
+            Dice::Olive => [0, 5, 5, 5, 5, 5],
+            Dice::Yellow => [3, 3, 3, 3, 8, 8],
+            Dice::Magenta => [1, 1, 6, 6, 6, 6],
         }
     }
 
-    pub fn roll(&self) -> u8 { self.faces[rand::thread_rng().gen_range(0..6)] }
+    pub fn name(&self) -> &str
+    {
+        match self
+        {
+            Dice::Red => "Red",
+            Dice::Blue => "Blue",
+            Dice::Olive => "Olive",
+            Dice::Yellow => "Yellow",
+            Dice::Magenta => "Magenta",
+        }
+    }
+
+    pub fn fstr(s : &str) -> Dice
+    {
+        match s.to_lowercase().as_str()
+        {
+            "r" | "red" => Dice::Red,
+            "b" | "blue" => Dice::Blue,
+            "o" | "olive" | "g" | "green" => Dice::Olive,
+            "y" | "yellow" => Dice::Yellow,
+            "m" | "magenta" | "p" | "purple" => Dice::Magenta,
+            _ => panic!("{} is not a recognized dice code", s),
+        }
+    }
 }
 
 struct ContestResults
@@ -60,13 +93,25 @@ impl ContestResults
         {
             Outcome::AWins => format!(
                 "{: >7} {: >2} won with {: >2}% wins and {: >2}% ties, losing {: >2}% of the time to {: >7} {: >2}",
-                self.a.name, self.a_rolls, a_win_percent, ties_percent, b_win_percent, self.b.name, self.b_rolls
+                self.a.name(),
+                self.a_rolls,
+                a_win_percent,
+                ties_percent,
+                b_win_percent,
+                self.b.name(),
+                self.b_rolls
             ),
             Outcome::BWins => format!(
                 "{: >7} {: >2} won with {: >2}% wins and {: >2}% ties, losing {: >2}% of the time to {: >7} {: >2}",
-                self.b.name, self.b_rolls, b_win_percent, ties_percent, a_win_percent, self.a.name, self.a_rolls
+                self.b.name(),
+                self.b_rolls,
+                b_win_percent,
+                ties_percent,
+                a_win_percent,
+                self.a.name(),
+                self.a_rolls
             ),
-            Outcome::Tie => format!("Both {: >7} and {: >7} tied", self.a.name, self.b.name),
+            Outcome::Tie => format!("Both {: >7} and {: >7} tied", self.a.name(), self.b.name()),
         }
     }
 }
@@ -121,8 +166,8 @@ fn contest(a : &Dice, b : &Dice, a_rolls : usize, b_rolls : usize, samples : u32
         outcome : outcome.clone(),
         winner : match outcome
         {
-            Outcome::AWins => a.name.clone(),
-            Outcome::BWins => b.name.clone(),
+            Outcome::AWins => String::from(a.name()),
+            Outcome::BWins => String::from(b.name()),
             Outcome::Tie => String::from("tie"),
         },
     }
@@ -130,13 +175,7 @@ fn contest(a : &Dice, b : &Dice, a_rolls : usize, b_rolls : usize, samples : u32
 
 fn main()
 {
-    let red_d = Dice::new("Red", vec![4, 4, 4, 4, 4, 9]);
-    let blue_d = Dice::new("Blue", vec![2, 2, 2, 7, 7, 7]);
-    let olive_d = Dice::new("Olive", vec![0, 5, 5, 5, 5, 5]);
-    let yellow_d = Dice::new("Yellow", vec![3, 3, 3, 3, 8, 8]);
-    let magenta_d = Dice::new("Magenta", vec![1, 1, 6, 6, 6, 6]);
-
-    let results = vec![red_d, blue_d, olive_d, yellow_d, magenta_d]
+    let results = vec![Dice::Red, Dice::Blue, Dice::Olive, Dice::Yellow, Dice::Magenta]
         .iter()
         .combinations(2)
         .collect::<Vec<_>>()
@@ -146,7 +185,6 @@ fn main()
                 .collect::<Vec<_>>()
                 .par_iter()
                 .map(|i| contest(&v[0], &v[1], *i, *i, 1000000))
-                // .chain(vec![String::from("")].par_iter().map(|n| n.clone()))
                 .collect::<Vec<_>>()
         })
         .flatten()
